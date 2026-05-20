@@ -34,9 +34,9 @@
 
 ## 工作流
 
-有想法 → 00-Inbox（闪念）
-读完内容 → 10-Literature（文献）
-加工想法 → 20-Permanent（永久笔记 + 双向链接）
-开始项目 → 30-Projects
-完成归档 → 40-Archive
+有想法 → 00-Inbox（闪念）  
+读完内容 → 10-Literature（文献）  
+加工想法 → 20-Permanent（永久笔记 + 双向链接）  
+开始项目 → 30-Projects  
+完成归档 → 40-Archive  
 主题汇聚 → 95-MOC
