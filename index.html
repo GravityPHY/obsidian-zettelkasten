@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Zettelkasten × Obsidian</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,400&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1510;
+    --paper: #f5f0e8;
+    --aged: #e8dfc8;
+    --sepia: #8b6f47;
+    --rust: #c4502a;
+    --gold: #b8860b;
+    --muted: #6b5b45;
+    --card-bg: #faf6ee;
+    --line: rgba(139,111,71,0.25);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Noto Serif SC', serif;
+    line-height: 1.8;
+    background-image: 
+      radial-gradient(ellipse at 10% 0%, rgba(184,134,11,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 90% 100%, rgba(196,80,42,0.05) 0%, transparent 50%),
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect width='4' height='4' fill='none'/%3E%3Ccircle cx='1' cy='1' r='0.5' fill='rgba(139,111,71,0.08)'/%3E%3C/svg%3E");
+  }
+
+  /* HEADER */
+  header {
+    padding: 5rem 2rem 3rem;
+    text-align: center;
+    position: relative;
+    border-bottom: 2px solid var(--line);
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, var(--gold), var(--rust), var(--gold), transparent);
+  }
+  .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.3em;
+    color: var(--sepia);
+    text-transform: uppercase;
+    margin-bottom: 1.2rem;
+  }
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.4rem, 6vw, 4.2rem);
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--ink);
+    margin-bottom: 0.4rem;
+  }
+  h1 em {
+    font-style: italic;
+    color: var(--rust);
+  }
+  .subtitle {
+    font-size: 1rem;
+    color: var(--muted);
+    margin-top: 1rem;
+    font-weight: 300;
+  }
+  .subtitle strong { color: var(--sepia); font-weight: 600; }
+
+  /* MAIN LAYOUT */
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 1.5rem 5rem;
+  }
+
+  /* SECTION */
+  section {
+    margin: 4rem 0;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  section.visible { opacity: 1; transform: translateY(0); }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.25em;
+    color: var(--rust);
+    text-transform: uppercase;
+    margin-bottom: 0.8rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+
+  h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 1.2rem;
+  }
+
+  p {
+    color: var(--muted);
+    margin-bottom: 1rem;
+    font-size: 0.97rem;
+  }
+
+  /* PHILOSOPHY CARD */
+  .philosophy-card {
+    background: var(--aged);
+    border-left: 4px solid var(--gold);
+    padding: 1.8rem 2rem;
+    border-radius: 0 8px 8px 0;
+    margin: 1.5rem 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .philosophy-card::before {
+    content: '"';
+    position: absolute;
+    top: -1rem;
+    left: 1.2rem;
+    font-size: 6rem;
+    font-family: 'Playfair Display', serif;
+    color: rgba(184,134,11,0.2);
+    line-height: 1;
+  }
+  .philosophy-card p {
+    font-size: 1.05rem;
+    color: var(--ink);
+    font-style: italic;
+    position: relative;
+    z-index: 1;
+    margin: 0;
+  }
+  .philosophy-card cite {
+    display: block;
+    margin-top: 0.8rem;
+    font-size: 0.8rem;
+    color: var(--sepia);
+    font-style: normal;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* NOTE TYPES GRID */
+  .note-types {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.2rem;
+    margin: 1.5rem 0;
+  }
+  .note-card {
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 1.5rem;
+    position: relative;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: default;
+  }
+  .note-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 30px rgba(139,111,71,0.15);
+  }
+  .note-card::before {
+    content: attr(data-num);
+    position: absolute;
+    top: 1rem;
+    right: 1.2rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.8rem;
+    color: rgba(139,111,71,0.12);
+    font-weight: 300;
+    line-height: 1;
+  }
+  .note-card .tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.12em;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    margin-bottom: 0.8rem;
+    text-transform: uppercase;
+  }
+  .tag-fleeting { background: rgba(196,80,42,0.1); color: var(--rust); }
+  .tag-literature { background: rgba(184,134,11,0.1); color: var(--gold); }
+  .tag-permanent { background: rgba(26,21,16,0.08); color: var(--ink); }
+  .tag-index { background: rgba(107,91,69,0.12); color: var(--muted); }
+
+  .note-card h3 { font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem; }
+  .note-card p { font-size: 0.85rem; margin: 0; }
+
+  /* WORKFLOW */
+  .workflow {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    margin: 1.5rem 0;
+    position: relative;
+  }
+  .workflow-step {
+    display: flex;
+    gap: 1.5rem;
+    position: relative;
+  }
+  .step-line {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .step-dot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--aged);
+    border: 2px solid var(--sepia);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: var(--sepia);
+    flex-shrink: 0;
+    z-index: 1;
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .workflow-step:hover .step-dot {
+    background: var(--rust);
+    border-color: var(--rust);
+    color: white;
+  }
+  .step-connector {
+    width: 1px;
+    flex: 1;
+    background: var(--line);
+    min-height: 1.5rem;
+  }
+  .step-content {
+    padding: 0 0 2rem;
+    flex: 1;
+  }
+  .step-content h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    padding-top: 0.4rem;
+  }
+  .step-content p { font-size: 0.87rem; margin: 0; }
+
+  /* CODE BLOCKS */
+  .code-block {
+    background: var(--ink);
+    color: #d4c9b0;
+    border-radius: 8px;
+    padding: 1.4rem 1.6rem;
+    margin: 1rem 0;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem;
+    line-height: 1.7;
+    position: relative;
+  }
+  .code-block .lang-badge {
+    position: absolute;
+    top: 0.7rem;
+    right: 1rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.15em;
+    color: rgba(212,201,176,0.4);
+    text-transform: uppercase;
+  }
+  .code-comment { color: #8b7355; }
+  .code-key { color: #c4a45a; }
+  .code-val { color: #8ab56a; }
+  .code-link { color: #6aabbb; }
+  .code-tag { color: #bb6a6a; }
+
+  /* FOLDER TREE */
+  .folder-tree {
+    background: var(--ink);
+    border-radius: 8px;
+    padding: 1.4rem 1.6rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 2;
+    color: #d4c9b0;
+    margin: 1rem 0;
+  }
+  .folder-tree .folder { color: #c4a45a; }
+  .folder-tree .file { color: #8ab56a; }
+  .folder-tree .note { color: #6aabbb; }
+  .folder-tree .dim { color: #5a4e3a; }
+
+  /* TIPS GRID */
+  .tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .tip-card {
+    background: var(--card-bg);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 1.2rem;
+    transition: border-color 0.2s;
+  }
+  .tip-card:hover { border-color: var(--gold); }
+  .tip-icon {
+    font-size: 1.4rem;
+    margin-bottom: 0.6rem;
+  }
+  .tip-card h4 { font-size: 0.9rem; margin-bottom: 0.4rem; }
+  .tip-card p { font-size: 0.82rem; margin: 0; }
+
+  /* PLUGINS TABLE */
+  .plugin-list {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.2rem 0;
+    font-size: 0.88rem;
+  }
+  .plugin-list th {
+    text-align: left;
+    padding: 0.6rem 1rem;
+    background: var(--aged);
+    color: var(--sepia);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--line);
+  }
+  .plugin-list td {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--line);
+    color: var(--muted);
+    vertical-align: top;
+  }
+  .plugin-list tr:hover td { background: rgba(232,223,200,0.3); }
+  .plugin-name { font-weight: 600; color: var(--ink); font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; }
+  .essential-badge {
+    display: inline-block;
+    font-size: 0.6rem;
+    padding: 0.1rem 0.4rem;
+    background: rgba(196,80,42,0.1);
+    color: var(--rust);
+    border-radius: 3px;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.05em;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+  }
+
+  /* ID CONVENTION */
+  .id-demo {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    margin: 1.2rem 0;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+  .id-segment {
+    flex: 1;
+    padding: 1rem;
+    text-align: center;
+    background: var(--card-bg);
+    border-right: 1px solid var(--line);
+    transition: background 0.2s;
+  }
+  .id-segment:last-child { border-right: none; }
+  .id-segment:hover { background: var(--aged); }
+  .id-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 400;
+    color: var(--rust);
+    display: block;
+    margin-bottom: 0.3rem;
+  }
+  .id-label { font-size: 0.72rem; color: var(--muted); }
+
+  /* DIVIDER */
+  .ornament {
+    text-align: center;
+    margin: 3rem 0;
+    color: var(--sepia);
+    font-size: 1.2rem;
+    opacity: 0.4;
+    letter-spacing: 0.5em;
+  }
+
+  /* FOOTER */
+  footer {
+    text-align: center;
+    padding: 3rem 2rem;
+    border-top: 1px solid var(--line);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    opacity: 0.6;
+  }
+
+  /* RESPONSIVE */
+  @media (max-width: 600px) {
+    h1 { font-size: 2rem; }
+    .note-types { grid-template-columns: 1fr; }
+    .id-demo { flex-direction: column; }
+    .id-segment { border-right: none; border-bottom: 1px solid var(--line); }
+    .id-segment:last-child { border-bottom: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Knowledge Management System</div>
+  <h1>Zettelkasten<br><em>× Obsidian</em></h1>
+  <p class="subtitle">用 <strong>卡片盒笔记法</strong> 构建你的第二大脑</p>
+</header>
+
+<main>
+
+  <!-- SECTION 1: 什么是 Zettelkasten -->
+  <section>
+    <div class="section-label">01 · 哲学根基</div>
+    <h2>什么是卡片盒笔记法</h2>
+    <p>Zettelkasten（德语"卡片盒"）由社会学家 Niklas Luhmann 发展完善。他用这套方法在 40 年间发表了 70 本著作和 400 余篇论文。其核心不是"存储信息"，而是<strong>让思想与思想之间产生联结</strong>，催生意想不到的洞见。</p>
+
+    <div class="philosophy-card">
+      <p>一张卡片的价值，不在于它本身写了什么，而在于它与其他卡片之间的关系网络。</p>
+      <cite>— Niklas Luhmann 的 Zettelkasten 方法论</cite>
+    </div>
+
+    <p>Obsidian 是实践 Zettelkasten 的理想工具：本地 Markdown 文件 + 双向链接 + 关系图谱，完美还原了物理卡片盒的连接逻辑，同时突破了纸张的局限。</p>
+  </section>
+
+  <div class="ornament">✦ ✦ ✦</div>
+
+  <!-- SECTION 2: 笔记类型 -->
+  <section>
+    <div class="section-label">02 · 笔记分类</div>
+    <h2>三种核心笔记类型</h2>
+    <p>Zettelkasten 的运转依赖三类笔记的协同工作，每种类型有其独特使命。</p>
+
+    <div class="note-types">
+      <div class="note-card" data-num="01">
+        <span class="tag tag-fleeting">闪念笔记</span>
+        <h3>Fleeting Notes</h3>
+        <p>随时捕捉的原始想法、灵感片段。不求完整，只求及时。24–48小时内须处理或丢弃。</p>
+      </div>
+      <div class="note-card" data-num="02">
+        <span class="tag tag-literature">文献笔记</span>
+        <h3>Literature Notes</h3>
+        <p>阅读书籍/文章/视频后，用<em>自己的语言</em>记录要点。必须注明来源，避免照抄原文。</p>
+      </div>
+      <div class="note-card" data-num="03">
+        <span class="tag tag-permanent">永久笔记</span>
+        <h3>Permanent Notes</h3>
+        <p>系统的核心。每张只表达<em>一个</em>完整想法，用完整句子写成，可独立阅读，并链接相关笔记。</p>
+      </div>
+      <div class="note-card" data-num="04">
+        <span class="tag tag-index">索引笔记</span>
+        <h3>Index / MOC</h3>
+        <p>主题的入口地图（Map of Content）。聚合某一领域的核心永久笔记，构建导航层级。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 3: 文件夹结构 -->
+  <section>
+    <div class="section-label">03 · 仓库结构</div>
+    <h2>Obsidian 仓库目录设计</h2>
+    <p>目录结构应该服务于工作流，而非成为整理的负担。推荐的简洁结构如下：</p>
+
+    <div class="folder-tree">
+      <span class="folder">📂 Vault/</span><br>
+      <span class="dim">├── </span><span class="folder">📂 00-Inbox/</span><span class="dim">         ← 闪念笔记落地处</span><br>
+      <span class="dim">├── </span><span class="folder">📂 10-Literature/</span><span class="dim">      ← 文献笔记</span><br>
+      <span class="dim">├── </span><span class="folder">📂 20-Permanent/</span><span class="dim">       ← 永久笔记（主体）</span><br>
+      <span class="dim">├── </span><span class="folder">📂 30-Projects/</span><span class="dim">        ← 进行中的项目</span><br>
+      <span class="dim">├── </span><span class="folder">📂 40-Archive/</span><span class="dim">         ← 已完成/归档内容</span><br>
+      <span class="dim">├── </span><span class="folder">📂 90-Templates/</span><span class="dim">       ← 模板文件</span><br>
+      <span class="dim">└── </span><span class="folder">📂 95-MOC/</span><span class="dim">             ← 索引/地图笔记</span><br>
+      <br>
+      <span class="dim">    20-Permanent/</span><br>
+      <span class="dim">    ├── </span><span class="note">202401151423 认知负荷与学习效率的关系.md</span><br>
+      <span class="dim">    ├── </span><span class="note">202401152056 刻意练习需要即时反馈.md</span><br>
+      <span class="dim">    └── </span><span class="note">202401160930 输出倒逼输入的机制.md</span>
+    </div>
+  </section>
+
+  <!-- SECTION 4: ID 规范 -->
+  <section>
+    <div class="section-label">04 · 笔记 ID</div>
+    <h2>唯一 ID 命名规范</h2>
+    <p>每张永久笔记需要一个<em>时间戳 ID</em>，确保即使标题更改，链接也永久有效。</p>
+
+    <div class="id-demo">
+      <div class="id-segment">
+        <span class="id-value">2024</span>
+        <span class="id-label">年</span>
+      </div>
+      <div class="id-segment">
+        <span class="id-value">01</span>
+        <span class="id-label">月</span>
+      </div>
+      <div class="id-segment">
+        <span class="id-value">15</span>
+        <span class="id-label">日</span>
+      </div>
+      <div class="id-segment">
+        <span class="id-value">1423</span>
+        <span class="id-label">时分</span>
+      </div>
+      <div class="id-segment" style="flex: 3;">
+        <span class="id-value" style="font-size:0.85rem;">认知负荷与学习效率</span>
+        <span class="id-label">描述性标题</span>
+      </div>
+    </div>
+
+    <p>完整文件名：<code style="font-family:'JetBrains Mono',monospace; background:var(--aged); padding:0.1rem 0.4rem; border-radius:3px; font-size:0.85rem;">202401151423 认知负荷与学习效率的关系.md</code></p>
+  </section>
+
+  <!-- SECTION 5: 模板 -->
+  <section>
+    <div class="section-label">05 · 笔记模板</div>
+    <h2>永久笔记 YAML 模板</h2>
+    <p>在 <code style="font-family:'JetBrains Mono',monospace; background:var(--aged); padding:0.1rem 0.4rem; border-radius:3px; font-size:0.82rem;">90-Templates/</code> 中创建以下模板，配合 Templater 插件使用：</p>
+
+    <div class="code-block">
+      <span class="lang-badge">MARKDOWN</span>
+      <span class="code-comment">---</span><br>
+      <span class="code-key">id</span>: <span class="code-val">&lt;% tp.date.now("YYYYMMDDHHmm") %&gt;</span><br>
+      <span class="code-key">created</span>: <span class="code-val">&lt;% tp.date.now("YYYY-MM-DD HH:mm") %&gt;</span><br>
+      <span class="code-key">tags</span>: <span class="code-tag">[]</span><br>
+      <span class="code-key">aliases</span>: <span class="code-tag">[]</span><br>
+      <span class="code-comment">---</span><br><br>
+      <span class="code-comment"># &lt;% tp.file.title %&gt;</span><br><br>
+      <span class="code-comment">## 核心论点</span><br>
+      <span class="code-val">&gt; 用一两句话阐明这张笔记的中心思想。</span><br><br>
+      <span class="code-comment">## 展开说明</span><br><br>
+      <span class="code-comment">## 相关链接</span><br>
+      - <span class="code-link">[[相关笔记ID 标题]]</span><br>
+      - <span class="code-link">[[另一张笔记]]</span><br><br>
+      <span class="code-comment">## 来源</span><br>
+      - <span class="code-link">[[文献笔记ID]]</span><br><br>
+      <span class="code-comment">## 待发展的想法</span>
+    </div>
+  </section>
+
+  <!-- SECTION 6: 工作流 -->
+  <section>
+    <div class="section-label">06 · 工作流程</div>
+    <h2>日常处理流程</h2>
+
+    <div class="workflow">
+      <div class="workflow-step">
+        <div class="step-line">
+          <div class="step-dot">01</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <h3>捕捉（Capture）</h3>
+          <p>随时将闪念扔进 <code style="font-family:'JetBrains Mono',monospace;font-size:0.82rem;">00-Inbox/</code>，不加工、不整理。可用手机 App 或快捷键。</p>
+        </div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-line">
+          <div class="step-dot">02</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <h3>处理（Process）</h3>
+          <p>每天或每周定期清理 Inbox。每条闪念决定：转化为永久笔记，还是删除。</p>
+        </div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-line">
+          <div class="step-dot">03</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <h3>连接（Link）</h3>
+          <p>永久笔记写完后，<em>立即</em>找它与其他笔记的关联。这一步是 Zettelkasten 的灵魂所在。</p>
+        </div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-line">
+          <div class="step-dot">04</div>
+          <div class="step-connector"></div>
+        </div>
+        <div class="step-content">
+          <h3>涌现（Emerge）</h3>
+          <p>定期在关系图谱中漫游，发现意外的连接。写作时从 MOC 出发，让笔记网络告诉你该写什么。</p>
+        </div>
+      </div>
+
+      <div class="workflow-step">
+        <div class="step-line">
+          <div class="step-dot">05</div>
+        </div>
+        <div class="step-content">
+          <h3>输出（Output）</h3>
+          <p>文章、演讲、项目方案——都从已有笔记中"提炼"，而非从零开始。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 7: 插件 -->
+  <section>
+    <div class="section-label">07 · 必备插件</div>
+    <h2>Obsidian 核心插件推荐</h2>
+
+    <table class="plugin-list">
+      <thead>
+        <tr>
+          <th>插件名</th>
+          <th>功能</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="plugin-name">Templater</span><span class="essential-badge">必装</span></td>
+          <td>动态模板，自动填充时间戳 ID、日期等变量</td>
+        </tr>
+        <tr>
+          <td><span class="plugin-name">Dataview</span><span class="essential-badge">必装</span></td>
+          <td>把笔记变成数据库，用查询语句生成动态列表和表格</td>
+        </tr>
+        <tr>
+          <td><span class="plugin-name">Zettlr / Zettelkasten</span></td>
+          <td>增强 ID 生成与跳转，自动补全链接</td>
+        </tr>
+        <tr>
+          <td><span class="plugin-name">Obsidian Git</span></td>
+          <td>自动 Git 备份，版本历史管理</td>
+        </tr>
+        <tr>
+          <td><span class="plugin-name">Spaced Repetition</span></td>
+          <td>间隔重复复习，与 Zettelkasten 结合加深记忆</td>
+        </tr>
+        <tr>
+          <td><span class="plugin-name">QuickAdd</span></td>
+          <td>快速创建笔记、执行宏命令，减少摩擦感</td>
+        </tr>
+        <tr>
+          <td><span class="plugin-name">Graph Analysis</span></td>
+          <td>分析笔记网络的中心度、聚类，发现孤立笔记</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECTION 8: 黄金法则 -->
+  <section>
+    <div class="section-label">08 · 实践原则</div>
+    <h2>Zettelkasten 的黄金法则</h2>
+
+    <div class="tips-grid">
+      <div class="tip-card">
+        <div class="tip-icon">⚛️</div>
+        <h4>原子性</h4>
+        <p>每张笔记只讲一件事。如果写完觉得"还需要补充"，就拆成两张。</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🗣️</div>
+        <h4>用自己的话</h4>
+        <p>永远不要复制粘贴。用自己的语言重述，才能检验是否真正理解。</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🔗</div>
+        <h4>链接优于标签</h4>
+        <p>优先使用 <code>[[双向链接]]</code>，而非 <code>#标签</code>。链接是语义的，标签是分类的。</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">🚫</div>
+        <h4>不追求完美</h4>
+        <p>不要为"整理"而整理。Zettelkasten 是有机生长的，混乱是正常状态。</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">♻️</div>
+        <h4>定期复习</h4>
+        <p>随机打开一张旧笔记，看能否建立新的连接。这是系统价值释放的关键。</p>
+      </div>
+      <div class="tip-card">
+        <div class="tip-icon">📝</div>
+        <h4>写给未来的自己</h4>
+        <p>假设读者是六个月后忘记了一切的自己。笔记需要完整、自洽。</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="ornament">✦ ✦ ✦</div>
+
+  <!-- SECTION 9: Dataview 查询示例 -->
+  <section>
+    <div class="section-label">09 · Dataview 示例</div>
+    <h2>用 Dataview 查询笔记网络</h2>
+    <p>在 MOC 笔记中嵌入 Dataview 查询，实现动态索引：</p>
+
+    <div class="code-block">
+      <span class="lang-badge">DATAVIEW</span>
+      <span class="code-comment">```dataview</span><br>
+      <span class="code-comment">// 列出所有含 #认知科学 标签的永久笔记</span><br>
+      TABLE file.ctime AS "创建时间", length(file.outlinks) AS "出链数"<br>
+      FROM <span class="code-val">"20-Permanent"</span> AND <span class="code-tag">#认知科学</span><br>
+      SORT file.ctime DESC<br>
+      <span class="code-comment">```</span>
+    </div>
+
+    <div class="code-block">
+      <span class="lang-badge">DATAVIEW</span>
+      <span class="code-comment">```dataview</span><br>
+      <span class="code-comment">// 找出孤立笔记（没有任何入链）</span><br>
+      LIST WHERE length(file.inlinks) = <span class="code-val">0</span><br>
+      AND file.folder = <span class="code-val">"20-Permanent"</span><br>
+      <span class="code-comment">```</span>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  Zettelkasten × Obsidian · 卡片盒笔记法实践指南 · 思想网络从第一张卡片开始
+</footer>
+
+<script>
+  // Intersection Observer for scroll animations
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+      }
+    });
+  }, { threshold: 0.08 });
+
+  document.querySelectorAll('section').forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
